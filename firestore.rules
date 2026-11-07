@@ -1,0 +1,110 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Worksheet validation helper
+    function isValidWorksheet(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+             data.userId == userId &&
+             data.category is string && data.category.size() <= 64 &&
+             data.title is string && data.title.size() <= 128 &&
+             data.columns is list && data.columns.size() <= 50 &&
+             data.rows is list && data.rows.size() <= 500 &&
+             data.updatedAt is string && data.updatedAt.size() <= 64 &&
+             (!('totalAmount' in data) || data.totalAmount is number) &&
+             (!('currency' in data) || (data.currency is string && data.currency.size() <= 16)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    // Expenditure validation helper
+    function isValidExpenditure(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+             data.userId == userId &&
+             data.dates is list && data.dates.size() <= 31 &&
+             (!('primaryDate' in data) || (data.primaryDate is string && data.primaryDate.size() <= 32)) &&
+             (!('month' in data) || (data.month is string && data.month.size() <= 16)) &&
+             data.amount is number && data.amount >= 0 &&
+             data.description is string && data.description.size() <= 512 &&
+             (!('category' in data) || (data.category is string && data.category.size() <= 64)) &&
+             (!('createdAt' in data) || (data.createdAt is string && data.createdAt.size() <= 64));
+    }
+
+    // Project validation helper
+    function isValidProject(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+             data.userId == userId &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 160 &&
+             data.expectedDate is string && data.expectedDate.size() <= 32 &&
+             data.expectedAmount is number && data.expectedAmount >= 0 &&
+             data.description is string && data.description.size() <= 1024 &&
+             (!('status' in data) || (data.status is string && data.status.size() <= 32)) &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // Note validation helper
+    function isValidNote(data, userId) {
+      return data.id is string && isValidId(data.id) &&
+             data.userId == userId &&
+             data.content is string && data.content.size() <= 2048 &&
+             (!('tag' in data) || (data.tag is string && data.tag.size() <= 64)) &&
+             data.createdAt is string && data.createdAt.size() <= 64;
+    }
+
+    // User Subcollections
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /worksheets/{worksheetId} {
+        allow get, list, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(worksheetId) && isValidWorksheet(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(worksheetId) && isValidWorksheet(incoming(), userId) &&
+                         incoming().userId == existing().userId;
+      }
+
+      match /expenditures/{expenditureId} {
+        allow get, list, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(expenditureId) && isValidExpenditure(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(expenditureId) && isValidExpenditure(incoming(), userId) &&
+                         incoming().userId == existing().userId;
+      }
+
+      match /projects/{projectId} {
+        allow get, list, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(projectId) && isValidProject(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(projectId) && isValidProject(incoming(), userId) &&
+                         incoming().userId == existing().userId;
+      }
+
+      match /notes/{noteId} {
+        allow get, list, delete: if isOwner(userId);
+        allow create: if isOwner(userId) && isValidId(noteId) && isValidNote(incoming(), userId);
+        allow update: if isOwner(userId) && isValidId(noteId) && isValidNote(incoming(), userId) &&
+                         incoming().userId == existing().userId;
+      }
+    }
+  }
+}

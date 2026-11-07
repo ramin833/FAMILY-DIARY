@@ -1,0 +1,86 @@
+{
+  "entities": {
+    "Worksheet": {
+      "title": "Worksheet",
+      "description": "Spreadsheet worksheet for income streams such as tuition, father salary, selling products, and other assistance",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "category": { "type": "string", "maxLength": 64 },
+        "title": { "type": "string", "maxLength": 128 },
+        "columns": { "type": "array" },
+        "rows": { "type": "array" },
+        "totalAmount": { "type": "number" },
+        "currency": { "type": "string", "maxLength": 16 },
+        "updatedAt": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "category", "title", "columns", "rows", "updatedAt"]
+    },
+    "Expenditure": {
+      "title": "Expenditure",
+      "description": "Date-based family expenditure item spanning single or multiple dates within a month",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "dates": { "type": "array" },
+        "primaryDate": { "type": "string", "maxLength": 32 },
+        "month": { "type": "string", "maxLength": 16 },
+        "amount": { "type": "number" },
+        "description": { "type": "string", "maxLength": 512 },
+        "category": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "dates", "primaryDate", "month", "amount", "description", "createdAt"]
+    },
+    "Project": {
+      "title": "Project",
+      "description": "Family project with expected completion date, target budget, and countdown alarm",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "title": { "type": "string", "maxLength": 160 },
+        "expectedDate": { "type": "string", "maxLength": 32 },
+        "expectedAmount": { "type": "number" },
+        "description": { "type": "string", "maxLength": 1024 },
+        "status": { "type": "string", "maxLength": 32 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "title", "expectedDate", "expectedAmount", "description", "createdAt"]
+    },
+    "Note": {
+      "title": "Note",
+      "description": "Family diary memo or quick journal thought",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "userId": { "type": "string", "maxLength": 128 },
+        "content": { "type": "string", "maxLength": 2048 },
+        "tag": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "userId", "content", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/worksheets/{worksheetId}": {
+      "schema": "Worksheet",
+      "description": "Income spreadsheets partitioned by category (tuition, father salary, selling products, others help)"
+    },
+    "/users/{userId}/expenditures/{expenditureId}": {
+      "schema": "Expenditure",
+      "description": "Month-by-month and multi-date expenditure entries"
+    },
+    "/users/{userId}/projects/{projectId}": {
+      "schema": "Project",
+      "description": "Family projects and countdown reminders"
+    },
+    "/users/{userId}/notes/{noteId}": {
+      "schema": "Note",
+      "description": "Family diary logs and memos"
+    }
+  }
+}
